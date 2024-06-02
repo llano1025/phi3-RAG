@@ -7,6 +7,7 @@ import transformers
 import torch
 from langchain.chains import RetrievalQA
 from langchain.embeddings import HuggingFaceInstructEmbeddings
+from langchain_community.callbacks import streaming_stdout
 from langchain.llms import HuggingFacePipeline
 from langchain_community.vectorstores import FAISS
 from langchain import PromptTemplate
@@ -46,9 +47,9 @@ class CFG:
     k = 6
 
     # paths
-    PDFs_path = '/home/llanopi/dev/RAG/kaggle/input/100-llm-papers-to-explore/'
-    Embeddings_path = '/home/llanopi/dev/RAG/kaggle/input/faiss-ml-papers-st'
-    Output_folder = '/home/llanopi/dev/RAG/ml-papers-vectordb'
+    PDFs_path = '/home/llanopi/dev/RAG/data/100-llm-papers-to-explore/'
+    Embeddings_path = '/home/llanopi/dev/RAG/data/faiss-ml-papers-st'
+    Output_folder = '/home/llanopi/dev/RAG/vectordb'
 
 
 loader = DirectoryLoader(
@@ -163,6 +164,8 @@ pipe = pipeline(
     #     max_length = CFG.max_len,
     max_new_tokens=CFG.max_new_tokens,
 
+    # Define your callbacks for handling streaming output
+    callbacks=[streaming_stdout.StreamingStdOutCallbackHandler()],
 
     temperature=CFG.temperature,
     top_p=CFG.top_p,
