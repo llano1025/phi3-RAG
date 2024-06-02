@@ -1,13 +1,13 @@
 from transformers import (
     AutoTokenizer, AutoModelForCausalLM,
     BitsAndBytesConfig,
-    pipeline
+    pipeline, TextStreamer
 )
 import transformers
 import torch
 from langchain.chains import RetrievalQA
 from langchain.embeddings import HuggingFaceInstructEmbeddings
-from langchain_community.callbacks import streaming_stdout
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.llms import HuggingFacePipeline
 from langchain_community.vectorstores import FAISS
 from langchain import PromptTemplate
@@ -140,6 +140,7 @@ def build_model(model_repo=CFG.model_name):
 
 
 tokenizer, model = build_model(model_repo=CFG.model_name)
+streamer = TextStreamer(tokenizer)
 gc.collect()
 model.eval()
 model.hf_device_map
@@ -165,7 +166,7 @@ pipe = pipeline(
     max_new_tokens=CFG.max_new_tokens,
 
     # Define your callbacks for handling streaming output
-    callbacks=[streaming_stdout.StreamingStdOutCallbackHandler()],
+    streamer=streamer,
 
     temperature=CFG.temperature,
     top_p=CFG.top_p,
