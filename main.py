@@ -13,6 +13,8 @@ from langchain_community.vectorstores import FAISS
 from langchain import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import PyPDFLoader, DirectoryLoader
+from langchain.memory import ConversationSummaryMemory
+from langchain.chat_models import ChatOpenAI
 import langchain
 import gc
 import time
@@ -23,6 +25,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 IS_LOAD_EMBED = True
+IS_LOCAL_MODEL = True
 
 
 class CFG:
@@ -142,42 +145,54 @@ def build_model(model_repo=CFG.model_name):
     return tokenizer, model
 
 
-tokenizer, model = build_model(model_repo=CFG.model_name)
-streamer = TextStreamer(tokenizer)
-gc.collect()
-model.eval()
-model.hf_device_map
+if IS_LOCAL_MODEL == True:
 
-terminators = [
-    tokenizer.eos_token_id,
-    tokenizer.bos_token_id
-]
+    tokenizer, model = build_model(model_repo=CFG.model_name)
+    streamer = TextStreamer(tokenizer)
+    gc.collect()
+    model.eval()
+    model.hf_device_map
 
+    terminators = [
+        tokenizer.eos_token_id,
+        tokenizer.bos_token_id
+    ]
 
-# hugging face pipeline
-pipe = pipeline(
-    task="text-generation",
+    # hugging face pipeline
+    pipe = pipeline(
+        task="text-generation",
 
-    model=model,
+        model=model,
 
-    tokenizer=tokenizer,
-    #     pad_token_id = tokenizer.eos_token_id,
-    eos_token_id=terminators,
+        tokenizer=tokenizer,
+        #     pad_token_id = tokenizer.eos_token_id,
+        eos_token_id=terminators,
 
-    do_sample=True,
-    #     max_length = CFG.max_len,
-    max_new_tokens=CFG.max_new_tokens,
+        do_sample=True,
+        #     max_length = CFG.max_len,
+        max_new_tokens=CFG.max_new_tokens,
 
-    # Define your callbacks for handling streaming output
-    streamer=streamer,
+        # Define your callbacks for handling streaming output
+        streamer=streamer,
 
-    temperature=CFG.temperature,
-    top_p=CFG.top_p,
-    repetition_penalty=CFG.repetition_penalty,
-)
+        temperature=CFG.temperature,
+        top_p=CFG.top_p,
+        repetition_penalty=CFG.repetition_penalty,
+    )
 
-# langchain pipeline
-llm = HuggingFacePipeline(pipeline=pipe)
+    # langchain pipeline
+    llm = HuggingFacePipeline(pipeline=pipe)
+
+else:
+
+    os.environ["OPENAI_API_KEY"] = "API Key"
+
+    llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+
+    memory = ConversationSummaryMemory(
+        llm=llm, memory_key="chat_history", return_messages=True
+    )
+
 
 prompt_template = """
 <|system|>
