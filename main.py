@@ -52,28 +52,31 @@ class CFG:
     Output_folder = '/home/llanopi/dev/RAG/vectordb'
 
 
-loader = DirectoryLoader(
-    CFG.PDFs_path,
-    glob="./*3215v3.pdf" if CFG.DEBUG else "./*.pdf",
-    loader_cls=PyPDFLoader,
-    show_progress=True,
-    use_multithreading=True
-)
-
-documents = loader.load()
-print(f'We have {len(documents)} pages in total')
-
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=CFG.split_chunk_size,
-    chunk_overlap=CFG.split_overlap
-)
-
-texts = text_splitter.split_documents(documents)
-
-print(f'We have created {len(texts)} chunks from {len(documents)} pages')
-
 if IS_LOAD_EMBED == False:
-    # we create the embeddings if they do not already exist in the input folder
+
+    # Load data
+    loader = DirectoryLoader(
+        CFG.PDFs_path,
+        glob="./*3215v3.pdf" if CFG.DEBUG else "./*.pdf",
+        loader_cls=PyPDFLoader,
+        show_progress=True,
+        use_multithreading=True
+    )
+
+    documents = loader.load()
+    print(f'We have {len(documents)} pages in total')
+
+    # Splitter
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CFG.split_chunk_size,
+        chunk_overlap=CFG.split_overlap
+    )
+
+    texts = text_splitter.split_documents(documents)
+
+    print(f'We have created {len(texts)} chunks from {len(documents)} pages')
+
+    # Create Embeddings
     if not os.path.exists(CFG.Embeddings_path + '/index.faiss'):
 
         print('Creating embeddings...\n\n')
